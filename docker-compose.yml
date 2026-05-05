@@ -1,0 +1,66 @@
+services:
+  webserver:
+    image: nginx
+    container_name: webserver
+    restart: always
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - /var/www/dev.orbitdigital.co.za:/var/www/dev.orbitdigital.co.za
+      - /var/www/certbot:/var/www/certbot
+      - /etc/letsencrypt:/etc/letsencrypt
+      - /home/pam/nginx/conf.d/default.conf:/etc/nginx/conf.d/default.conf
+
+  portainer:
+    image: portainer/portainer-ce
+    container_name: portainer
+    restart: always
+    ports:
+      - "127.0.0.1:9000:9000"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - portainer_data:/data
+
+  prometheus:
+    image: prom/prometheus
+    container_name: prometheus
+    restart: always
+    ports:
+      - "127.0.0.1:9090:9090"
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.external-url=/prometheus/'
+      - '--web.route-prefix=/'
+    volumes:
+      - prometheus_data:/prometheus
+      - /home/pam/projects/webserver/prometheus.yml:/etc/prometheus/prometheus.yml
+
+  node-exporter:
+    image: prom/node-exporter
+    container_name: node-exporter
+    restart: always
+    ports:
+      - "127.0.0.1:9100:9100"
+
+  grafana:
+    image: grafana/grafana
+    container_name: grafana
+    restart: always
+    ports:
+      - "127.0.0.1:3000:3000"
+    volumes:
+      - grafana_data:/var/lib/grafana
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD}
+      - GF_SERVER_PROTOCOL=http
+      - GF_SERVER_DOMAIN=dev.orbitdigital.co.za
+      - GF_SERVER_ROOT_URL=https://dev.orbitdigital.co.za/grafana/
+      - GF_SERVER_SERVE_FROM_SUB_PATH=true
+
+volumes:
+  portainer_data:
+  prometheus_data:
+  grafana_data:
+
